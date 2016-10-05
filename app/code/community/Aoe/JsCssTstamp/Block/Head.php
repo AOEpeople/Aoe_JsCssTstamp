@@ -115,14 +115,14 @@ class Aoe_JsCssTstamp_Block_Head extends Mage_Page_Block_Html_Head
         if ($type === 'skin_css' && empty($params)) {
             $params = 'media="all"';
         }
-        $this->_data['items'][$type . '/' . $name] = [
+        $this->_data['items'][$type . '/' . $name] = array(
             'type'   => $type,
             'name'   => $name,
             'params' => $params,
             'if'     => (bool) $if ? $if : null,
             'cond'   => (bool) $cond ? $cond : null,
             'prio'   => $prio ? (int) $prio : self::DEFAULT_PRIO
-        ];
+        );
 
         if ($prio != self::DEFAULT_PRIO) {
             $this->_sortAssets = true;
