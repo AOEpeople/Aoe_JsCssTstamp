@@ -16,6 +16,11 @@ class Aoe_JsCssTstamp_Block_Head extends Mage_Page_Block_Html_Head
     protected $_sortAssets = false;
 
     /**
+     * @var int
+     */
+    protected $_addIndex = 0;
+
+    /**
      * Get HEAD HTML with CSS/JS/RSS definitions
      * (actually it also renders other elements, TODO: fix it up or rename this method)
      *
@@ -28,17 +33,35 @@ class Aoe_JsCssTstamp_Block_Head extends Mage_Page_Block_Html_Head
         }
 
         if ($this->_sortAssets) {
-            uasort(
-                $this->_data['items'],
-                function($a, $b) {
-                    if ($a == $b) return 0;
-                    return $a['prio'] > $b['prio'] ? 1 : -1;
-                }
-            );
+            $this->_sortAssets();
+            $this->_sortAssets = false;
         }
 
-
         return parent::getCssJsHtml();
+    }
+
+    /**
+     * Sort the assets.
+     * Assets with the same priority will be sorted by their add index
+     * @return void
+     */
+    protected function _sortAssets()
+    {
+        uasort(
+            $this->_data['items'],
+            function($a, $b) {
+                if ($a == $b) {
+                    return 0;
+                }
+
+                // use add index for same prio assets
+                if ($a['prio'] == $b['prio']) {
+                    return $a['add_index'] > $b['add_index'] ? 1 : -1;
+                }
+
+                return $a['prio'] > $b['prio'] ? 1 : -1;
+            }
+        );
     }
 
     /**
@@ -116,12 +139,13 @@ class Aoe_JsCssTstamp_Block_Head extends Mage_Page_Block_Html_Head
             $params = 'media="all"';
         }
         $this->_data['items'][$type . '/' . $name] = [
-            'type'   => $type,
-            'name'   => $name,
-            'params' => $params,
-            'if'     => (bool) $if ? $if : null,
-            'cond'   => (bool) $cond ? $cond : null,
-            'prio'   => $prio ? (int) $prio : self::DEFAULT_PRIO
+            'type'      => $type,
+            'name'      => $name,
+            'params'    => $params,
+            'if'        => (bool) $if ? $if : null,
+            'cond'      => (bool) $cond ? $cond : null,
+            'prio'      => $prio ? (int) $prio : self::DEFAULT_PRIO,
+            'add_index' => $this->_addIndex++,
         ];
 
         if ($prio != self::DEFAULT_PRIO) {
