@@ -264,39 +264,56 @@ class Aoe_JsCssTstamp_Block_Head extends Mage_Page_Block_Html_Head
      */
     protected function &_prepareStaticAndSkinElements($format, array $staticItems, array $skinItems, $mergeCallback = null)
     {
+        $versionKey = Mage::getModel('aoejscsststamp/package')->getVersionKey();
+        $AddTstampToAssetsJs = Mage::getModel('aoejscsststamp/package')->getAddTstampToAssetsJs();
         $designPackage = Mage::getDesign();
         $baseJsUrl = Mage::getBaseUrl('js');
         $items = array();
+
         if ($mergeCallback && !is_callable($mergeCallback)) {
             $mergeCallback = null;
         }
-
-        $staticItems = $this->_reorderItems($staticItems);
-        $skinItems = $this->_reorderItems($skinItems);
-
         // get static files from the js folder, no need in lookups
         foreach ($staticItems as $params => $rows) {
-            $items[$params] = array(
-                'files' => array(),
-                'urls' => array(),
-            );
-            foreach ($rows as $name) {
-                $items[$params]['files'][] = Mage::getBaseDir() . DS . 'js' . DS . $name;
-                $items[$params]['urls'][] = $baseJsUrl . $name;
-            }
-        }
-
-        // lookup each file basing on current theme configuration
-        foreach ($skinItems as $params => $rows) {
-            if (!isset($items[$params]['files'])) {
+            if (Mage::getStoreConfig('dev/js/merge_files')) {
                 $items[$params] = array(
                     'files' => array(),
                     'urls' => array(),
                 );
+                foreach ($rows as $name) {
+                    $items[$params]['files'][] = Mage::getBaseDir() . DS . 'js' . DS . $name;
+                    $items[$params]['urls'][] = $baseJsUrl . $name;
+                }
+            } else {
+                foreach ($rows as $name) {
+                    if ($AddTstampToAssetsJs) {
+                        $matches = array();
+                        if (preg_match('/(.*)\.(js)$/i', $name, $matches)) {
+                            $name = $matches[1] . '.' . $versionKey . '.' . $matches[2];
+                        }
+                    }
+                    $items[$params][] = $mergeCallback ? Mage::getBaseDir() . DS . 'js' . DS . $name : $baseJsUrl . $name;
+                }
             }
-            foreach ($rows as $name) {
-                $items[$params]['files'][] = $designPackage->getFilename($name, array('_type' => 'skin'));
-                $items[$params]['urls'][] = $designPackage->getSkinUrl($name, array());
+        }
+        // lookup each file basing on current theme configuration
+        foreach ($skinItems as $params => $rows) {
+            if (Mage::getStoreConfig('dev/js/merge_files')) {
+                if (!isset($items[$params]['files'])) {
+                    $items[$params] = array(
+                        'files' => array(),
+                        'urls' => array(),
+                    );
+                }
+                foreach ($rows as $name) {
+                    $items[$params]['files'][] = $designPackage->getFilename($name, array('_type' => 'skin'));
+                    $items[$params]['urls'][] = $designPackage->getSkinUrl($name, array());
+                }
+            } else {
+                foreach ($rows as $name) {
+                    $items[$params][] = $mergeCallback ? $designPackage->getFilename($name, array('_type' => 'skin'))
+                        : $designPackage->getSkinUrl($name, array());
+                }
             }
         }
 
@@ -305,7 +322,11 @@ class Aoe_JsCssTstamp_Block_Head extends Mage_Page_Block_Html_Head
             // attempt to merge
             $mergedUrl = false;
             if ($mergeCallback) {
-                $mergedUrl = call_user_func($mergeCallback, $rows['files']);
+                if (Mage::getStoreConfig('dev/js/merge_files')) {
+                    $mergedUrl = call_user_func($mergeCallback, $rows['files']);
+                } else {
+                    $mergedUrl = call_user_func($mergeCallback, $rows);
+                }
             }
             // render elements
             $params = trim($params);
@@ -313,31 +334,17 @@ class Aoe_JsCssTstamp_Block_Head extends Mage_Page_Block_Html_Head
             if ($mergedUrl) {
                 $html .= sprintf($format, $mergedUrl, $params);
             } else {
-                foreach ($rows['urls'] as $src) {
-                    $html .= sprintf($format, $src, $params);
+                if (Mage::getStoreConfig('dev/js/merge_files')) {
+                    foreach ($rows['urls'] as $src) {
+                        $html .= sprintf($format, $src, $params);
+                    }
+                } else {
+                    foreach ($rows as $src) {
+                        $html .= sprintf($format, $src, $params);
+                    }
                 }
             }
         }
-
         return $html;
-    }
-
-    /**
-     * Reorder items - move items by '<empty string>' to the end of the array
-     *
-     * @param array $items
-     * @return array
-     */
-    protected function _reorderItems(array $items)
-    {
-        if (isset($items[''])) {
-            $defaultItem = $items[''];
-            unset($items['']);
-            ksort($items);
-            $items = array_values($items);
-            array_push($items, $defaultItem);
-        }
-
-        return $items;
     }
 }
