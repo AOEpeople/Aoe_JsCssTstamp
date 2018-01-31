@@ -357,6 +357,9 @@ class Aoe_JsCssTstamp_Model_Package extends Aoe_DesignFallback_Model_Design_Pack
     protected function getProtocolSpecificTargetFileName($targetFilename)
     {
         $store = $this->getStore();
+        if (is_numeric($store)) {
+            $store = Mage::app()->getStore($store);
+        }
         if ($store->isAdmin()) {
             $secure = $store->isAdminUrlSecure();
         } else {
