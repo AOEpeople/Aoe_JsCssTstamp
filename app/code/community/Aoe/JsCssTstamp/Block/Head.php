@@ -340,11 +340,15 @@ class Aoe_JsCssTstamp_Block_Head extends Mage_Page_Block_Html_Head
     protected function _reorderItems(array $items)
     {
         if (isset($items[''])) {
-            $defaultItem = $items[''];
+            $defaultItem = [];
+            array_push($defaultItem, $items['']);
             unset($items['']);
             ksort($items);
-            $items = array_values($items);
-            array_push($items, $defaultItem);
+            $items = array_pop($items);
+            if(!empty($items)) {
+                array_push($defaultItem, $items);
+            }
+            return $defaultItem;
         }
 
         return $items;
