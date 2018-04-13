@@ -262,7 +262,7 @@ class Aoe_JsCssTstamp_Block_Head extends Mage_Page_Block_Html_Head
      * @param callback $mergeCallback
      * @return string
      */
-    protected function &_prepareStaticAndSkinElements($format, array $staticItems, array $skinItems, $mergeCallback = null)
+    public function &_prepareStaticAndSkinElements($format, array $staticItems, array $skinItems, $mergeCallback = null)
     {
         $designPackage = Mage::getDesign();
         $versionKey = $designPackage->getVersionKey();
